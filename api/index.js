@@ -1,121 +1,65 @@
-const { Bot, webhookCallback, InputMediaBuilder } = require("grammy");
+const { Bot, webhookCallback } = require('grammy');
 const axios = require('axios');
-const cheerio = require('cheerio');
 const bot = new Bot(process.env.BOT_TOKEN);
-const https = require('https');
 
-bot.use(async (ctx, next) => {
-    const timeout = setTimeout(() => {
-        console.log("Approaching Vercel timeout!");
-        // You could send a fallback message here
-    }, 8000); // 8 seconds trigger
-
-    try {
-        await next();
-    } finally {
-        clearTimeout(timeout);
-    }
-});
-
-bot.command("download_image", sendToGithubActions);
+bot.command('start', handleStartCommand);
+bot.command('img', handleImgCommand);
 
 // Create the grammY handler
-const handleUpdate = webhookCallback(bot, "http");
+const handleUpdate = webhookCallback(bot, 'http');
 module.exports = async (req, res) => {
-    // Only allow POST requests (which is what Telegram sends)
-    if (req.method === "POST") {
-        return handleUpdate(req, res);
-    }
-
-    // If someone visits in a browser (GET), show a friendly message
-    res.status(200).send("Bot is running! Please send updates via Telegram Webhook.");
+  if (req.method === 'POST') return handleUpdate(req, res);
+  res.status(200).send('Bot is running! Please send updates via Telegram Webhook.');
 };
 
-module.exports.config = {
-    runtime: 'edge',
-}
+/**
+ *  Handle /img command
+ * @param {import('grammy').Context} ctx
+ * @returns
+ */
+async function handleImgCommand(ctx) {
+  const url = ctx.match;
+  if (!url) return ctx.reply('Usage: /img <url>');
 
+  await ctx.reply('🚀 Preparing images...');
+
+  try {
+    await axios.post(
+      `https://api.github.com/repos/thangkieu/vc_server/dispatches`,
+      {
+        event_type: 'scrape-command',
+        client_payload: {
+          url: url,
+          chatId: ctx.chat.id.toString(),
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GITHUB_PAT}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      }
+    );
+  } catch (err) {
+    await ctx.reply('Failed to trigger GitHub Action.');
+  }
+}
 
 /**
- * Handle the /scrape command
- * @param {import("grammy").CommandContext} ctx Command Context
- * @returns Promise<void>
+ *
+ * @param {import('grammy').Context} ctx
  */
-async function handleScrapeRequest(ctx) {
-    const targetUrl = ctx.match;
-    if (!targetUrl) return ctx.reply("Usage: /scrape <url>");
+async function handleStartCommand(ctx) {
+  await ctx.reply(
+    ctx.chat.id,
+    `
+  🌅 Welcome to Empty ASDF Bot!
 
-    // 1. Respond to Telegram IMMEDIATELY
-    await ctx.reply("Request received! I'm extracting in the background to avoid timeouts...");
-
-    // 2. Start the process but DO NOT 'await' the whole thing here
-    // This allows the webhook function to finish and return 200 OK to Telegram
-    await scrapeAndSend(ctx.chat.id, targetUrl).catch(console.error);
-}
-
-// Move the heavy logic to a separate async function
-async function scrapeAndSend(chatId, targetUrl) {
-    try {
-        const { data } = await axios.get(targetUrl);
-        const $ = cheerio.load(data);
-        const imageElements = $('.entry-content img').get();
-
-        const allUrls = imageElements.map(img => {
-            const src = $(img).attr('src');
-            const srcset = $(img).attr('srcset');
-            let imgUrl = src;
-            if (srcset) {
-                const candidates = srcset.split(',').map(s => s.trim().split(' ')[0]);
-                imgUrl = candidates[candidates.length - 1];
-            }
-            return imgUrl ? new URL(imgUrl, targetUrl).href : null;
-        }).filter(url => url !== null);
-
-        if (allUrls.length === 0) {
-            return bot.api.sendMessage(chatId, "No images found.");
-        }
-
-        const chunkSize = 10;
-        for (let i = 0; i < allUrls.length; i += chunkSize) {
-            const chunk = allUrls.slice(i, i + chunkSize);
-            const mediaGroup = chunk.map(url => ({ type: 'photo', media: url }));
-
-            // Use bot.api instead of ctx (ctx might be expired)
-            await bot.api.sendMediaGroup(chatId, mediaGroup);
-            await new Promise(r => setTimeout(r, 500));
-        }
-
-        await bot.api.sendMessage(chatId, `🎉 Finished sending ${allUrls.length} images!`);
-    } catch (err) {
-        console.error(err);
-        await bot.api.sendMessage(chatId, "Failed to complete scraping. " + err.message);
-    }
-}
-
-async function sendToGithubActions(ctx) {
-    const url = ctx.match;
-    if (!url) return ctx.reply("Usage: /scrape <url>");
-
-    await ctx.reply("🚀 Preparing images...");
-
-    try {
-        await axios.post(
-            `https://api.github.com/repos/thangkieu/vc_server/dispatches`,
-            {
-                event_type: "scrape-command",
-                client_payload: {
-                    url: url,
-                    chatId: ctx.chat.id.toString()
-                }
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.GITHUB_PAT}`,
-                    Accept: "application/vnd.github.v3+json",
-                }
-            }
-        );
-    } catch (err) {
-        await ctx.reply("Failed to trigger GitHub Action.");
-    }
+  Send me a URL with /img <url> to start downloading images.
+  **Supported sites**:
+  - https://www.instagram.com/p/DSryRsKEXYd
+  - https://www.mens1069.com/archives/406495
+`,
+    { parse_mode: 'Markdown' }
+  );
 }

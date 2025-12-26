@@ -6,6 +6,11 @@ const { Bot, InputMediaBuilder } = require('grammy');
 
 chromium.use(stealth);
 
+/**
+ * [MAIN] Start the scraping process
+ */
+run().catch(console.error);
+
 const UNSUPPORTED_DOMAIN_MESSAGE = `
 ❌ **Error: Unsupported Domain**
 ━━━━━━━━━━━━━━
@@ -21,10 +26,12 @@ async function run() {
   const chatId = process.env.CHAT_ID;
   const bot = new Bot(process.env.BOT_TOKEN);
   // 1. Add the auto-retry plugin
-  bot.api.config.use(autoRetry({
-    maxRetryAttempts: 5,     // Try 5 times before giving up
-    maxDelaySeconds: 30,    // Don't wait longer than 30s
-  }));
+  bot.api.config.use(
+    autoRetry({
+      maxRetryAttempts: 5, // Try 5 times before giving up
+      maxDelaySeconds: 30, // Don't wait longer than 30s
+    })
+  );
 
   const startTime = performance.now(); // Start the clock
   let totalSent = 0;
@@ -33,50 +40,61 @@ async function run() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
-
   // Extract images using browser context (bypasses many blocks)
-  let images = []
+  let images = [];
   switch (new URL(url).hostname) {
     case 'instagram.com':
     case 'www.instagram.com':
-      images = await handleInstagram(page, url)
+      images = await handleInstagram(page, url);
       break;
     // Add more cases for different sites as needed
     case 'www.mens1069.com':
     case 'mens1069.com':
-      images = await handleMens1069(page, url)
+      images = await handleMens1069(page, url);
       break;
     default:
-      console.log("No handler for this domain, skipping specialized extraction.", url);
-      await bot.api.sendMessage(chatId, UNSUPPORTED_DOMAIN_MESSAGE.replace('{url}', url), { parse_mode: "Markdown" });
-      return
+      console.log('No handler for this domain, skipping specialized extraction.', url);
+      await bot.api.sendMessage(chatId, UNSUPPORTED_DOMAIN_MESSAGE.replace('{url}', url), {
+        parse_mode: 'Markdown',
+      });
+      return;
   }
   console.log(`Found ${images.length} images. Sending to Telegram...`);
-  let progressMsg = await bot.api.sendMessage(chatId, `📥 Found ${images.length} images. Starting download...`);
+  let progressMsg = await bot.api.sendMessage(
+    chatId,
+    `📥 Found ${images.length} images. Starting download...`
+  );
 
   // Chunk and send (same logic as before)
   for (let i = 0; i < images.length; i += 10) {
-    const chunk = images.slice(i, i + 10).map(u => InputMediaBuilder.photo(u));
+    const chunk = images.slice(i, i + 10).map((u) => InputMediaBuilder.photo(u));
     try {
       const progress = Math.min(((i + 10) / images.length) * 100, 100).toFixed(0);
-      const progressBar = "▓".repeat(Math.floor(progress / 10)) + "░".repeat(10 - Math.floor(progress / 10));
+      const progressBar =
+        '▓'.repeat(Math.floor(progress / 10)) + '░'.repeat(10 - Math.floor(progress / 10));
 
-      if (progressMsg) bot.api.deleteMessage(chatId, progressMsg.message_id).catch(() => { });
-      progressMsg = await bot.api.sendMessage(chatId,
-        `📥 Progress: ${progress}%\n${progressBar}\nSending batch ${Math.floor(i / 10) + 1}...`
-      ).catch(() => { }); // Catch errors if user deleted the message
+      if (progressMsg) bot.api.deleteMessage(chatId, progressMsg.message_id).catch(() => {});
+      progressMsg = await bot.api
+        .sendMessage(
+          chatId,
+          `📥 Progress: ${progress}%\n${progressBar}\nSending batch ${Math.floor(i / 10) + 1}...`
+        )
+        .catch(() => {}); // Catch errors if user deleted the message
 
       await bot.api.sendMediaGroup(chatId, chunk, {
         disable_notification: i > 0, // Only notify for the first batch
       });
       totalSent += chunk.length;
     } catch (error) {
-      console.error("Batch failed", error);
-      await bot.api.sendMessage(chatId, `⚠️ Failed to send batch starting at image ${i + 1}. Continuing...`);
+      console.error('Batch failed', error);
+      await bot.api.sendMessage(
+        chatId,
+        `⚠️ Failed to send batch starting at image ${i + 1}. Continuing...`
+      );
     }
   }
 
-  if (progressMsg) bot.api.deleteMessage(chatId, progressMsg.message_id).catch(() => { });
+  if (progressMsg) bot.api.deleteMessage(chatId, progressMsg.message_id).catch(() => {});
   // --- Generate Summary ---
   const endTime = performance.now();
   const durationSeconds = ((endTime - startTime) / 1000).toFixed(1);
@@ -88,29 +106,23 @@ async function run() {
 🌐 **URL:** ${url}
     `;
 
-  await bot.api.sendMessage(chatId, summary, { parse_mode: "Markdown" });
+  await bot.api.sendMessage(chatId, summary, { parse_mode: 'Markdown' });
 
   await browser.close();
 }
-
-run().catch(console.error);
 
 async function handleMens1069(page, url) {
   console.log(`Navigating to ${url}...`);
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.entry-content');
   return await page.evaluate(() => {
-    return Array.from(document.querySelectorAll('.entry-content img'))
-      .map(img => img.src);
+    return Array.from(document.querySelectorAll('.entry-content img')).map((img) => img.src);
   });
 }
 
 async function handleInstagram(page, url) {
-  // Instagram requires a specialized User-Agent to see public content
-  await page.goto(url);
-  // Logic to find the 'og:image' or the __additionalData script tag
-  const imageUrl = await page.evaluate(() => {
-    return document.querySelector('div[role="button"] img')?.src;
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  return await page.evaluate(() => {
+    return Array.from(document.querySelectorAll('div[role="button"] img')).map((img) => img.src);
   });
-  return imageUrl ? [imageUrl] : [];
 }
