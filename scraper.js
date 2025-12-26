@@ -127,7 +127,7 @@ async function handleMens1069(page, url) {
         srcset
           .split(',')
           .map((i) => i.trim())
-          .map((i) => i.split(' ')[0]) ?? img.src
+          .map((i) => i.split(' ')[0])[0] ?? img.src
       );
     });
   });
