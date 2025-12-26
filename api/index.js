@@ -1,12 +1,19 @@
-// api/index.js
 const { Bot, webhookCallback } = require("grammy");
 
-// 1. Initialize the bot
 const bot = new Bot(process.env.BOT_TOKEN);
 
-// 2. Add your commands and logic
-bot.command("start", (ctx) => ctx.reply("Welcome! Up and running on Vercel."));
-bot.on("message", (ctx) => ctx.reply(`You said: ${ctx.message.text}`));
+bot.command("start", (ctx) => ctx.reply("Welcome!"));
+bot.on("message", (ctx) => ctx.reply("Got your message!"));
 
-// 3. Export the Vercel serverless function
-module.exports = webhookCallback(bot, "http");
+// Create the grammY handler
+const handleUpdate = webhookCallback(bot, "http");
+
+module.exports = async (req, res) => {
+    // Only allow POST requests (which is what Telegram sends)
+    if (req.method === "POST") {
+        return handleUpdate(req, res);
+    }
+
+    // If someone visits in a browser (GET), show a friendly message
+    res.status(200).send("Bot is running! Please send updates via Telegram Webhook.");
+};
