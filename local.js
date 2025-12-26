@@ -1,0 +1,70 @@
+const express = require("express");
+const { Bot, webhookCallback, InputMediaBuilder } = require("grammy");
+const axios = require('axios');
+const cheerio = require('cheerio');
+require("dotenv").config(); // Load your BOT_TOKEN from a .env file
+
+const bot = new Bot(process.env.BOT_TOKEN);
+
+bot.command("scrape", async (ctx) => {
+  const targetUrl = ctx.match;
+  if (!targetUrl) return ctx.reply("Usage: /scrape <url>");
+
+  // 1. Respond to Telegram IMMEDIATELY
+  await ctx.reply("Request received! I'm scraping in the background to avoid timeouts...");
+
+
+  // 2. Start the process but DO NOT 'await' the whole thing here
+  // This allows the webhook function to finish and return 200 OK to Telegram
+  scrapeAndSend(ctx.chat.id, targetUrl).catch(console.error);
+});
+
+// Move the heavy logic to a separate async function
+async function scrapeAndSend(chatId, targetUrl) {
+  try {
+    const { data } = await axios.get(targetUrl);
+    const $ = cheerio.load(data);
+    const imageElements = $('.entry-content img').get();
+
+    const allUrls = imageElements.map(img => {
+      const src = $(img).attr('src');
+      const srcset = $(img).attr('srcset');
+      let imgUrl = src;
+      if (srcset) {
+        const candidates = srcset.split(',').map(s => s.trim().split(' ')[0]);
+        imgUrl = candidates[candidates.length - 1];
+      }
+      return imgUrl ? new URL(imgUrl, targetUrl).href : null;
+    }).filter(url => url !== null);
+
+    if (allUrls.length === 0) {
+      return bot.api.sendMessage(chatId, "No images found.");
+    }
+
+    const chunkSize = 10;
+    for (let i = 0; i < allUrls.length; i += chunkSize) {
+      const chunk = allUrls.slice(i, i + chunkSize);
+      const mediaGroup = chunk.map(url => ({ type: 'photo', media: url }));
+
+      // Use bot.api instead of ctx (ctx might be expired)
+      await bot.api.sendMediaGroup(chatId, mediaGroup);
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    await bot.api.sendMessage(chatId, `🎉 Finished sending ${allUrls.length} images!`);
+  } catch (err) {
+    await bot.api.sendMessage(chatId, "Failed to complete scraping.");
+  }
+}
+
+
+const app = express();
+app.use(express.json());
+
+// Set up the webhook route
+app.post("/api/index", webhookCallback(bot, "express"));
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Local server running on http://localhost:${PORT}`);
+});
