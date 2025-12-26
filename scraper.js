@@ -85,7 +85,7 @@ async function run() {
 ━━━━━━━━━━━━━━
 ✅ **Images Sent:** ${totalSent} / ${images.length}
 ⏱ **Total Time:** ${durationSeconds}s
-🌐 **Domain:** ${new URL(url).hostname}
+🌐 **URL:** ${url}
     `;
 
   await bot.api.sendMessage(chatId, summary, { parse_mode: "Markdown" });
