@@ -19,9 +19,7 @@ bot.use(async (ctx, next) => {
 bot.command("scrape", handleScrapeRequest);
 
 // Create the grammY handler
-const handleUpdate = webhookCallback(bot, "http", {
-    secretToken: process.env.BOT_SECRET_TOKEN,
-});
+const handleUpdate = webhookCallback(bot, "http",);
 
 module.exports = async (req, res) => {
     // Only allow POST requests (which is what Telegram sends)
