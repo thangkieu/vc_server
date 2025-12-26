@@ -27,7 +27,7 @@ async function handleImgCommand(ctx) {
     });
 
   await ctx.reply('🚀 Preparing images...');
-  await ctx.replyWithChatAction('typing');
+  await ctx.replyWithChatAction('upload_photo');
 
   try {
     await axios.post(
