@@ -60,6 +60,8 @@ async function run() {
       return;
   }
   console.log(`Found ${images.length} images. Sending to Telegram...`);
+  console.log(images);
+
   let progressMsg = await bot.api.sendMessage(
     chatId,
     `📥 Found ${images.length} images. Starting download...`
