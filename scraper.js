@@ -123,16 +123,22 @@ async function handleMens1069(page, url) {
   });
 }
 
+/**
+ *
+ * @param {import('playwright').Page} page
+ * @param {*} url
+ * @returns
+ */
 async function handleInstagram(page, url) {
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  return await page.evaluate(() => {
-    const INSTAGRAM_SELCTOR = process.env.INSTAGRAM_SELCTOR;
+  const INSTAGRAM_SELCTOR = process.env.INSTAGRAM_SELCTOR;
 
-    if (!INSTAGRAM_SELCTOR) {
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  return await page.evaluate((selector) => {
+    if (!selector) {
       console.error('Instagram selector not defined in env variables.');
       return [];
     }
 
-    return Array.from(document.querySelectorAll(`${INSTAGRAM_SELCTOR} img`)).map((img) => img.src);
-  });
+    return Array.from(document.querySelectorAll(`${selector} img`)).map((img) => img.src);
+  }, INSTAGRAM_SELCTOR);
 }
