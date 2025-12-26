@@ -121,7 +121,15 @@ async function handleMens1069(page, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.entry-content');
   return await page.evaluate(() => {
-    return Array.from(document.querySelectorAll('.entry-content img')).map((img) => img.src);
+    return Array.from(document.querySelectorAll('.entry-content img')).map((img) => {
+      const srcset = img.getAttribute('srcset');
+      return (
+        srcset
+          .split(',')
+          .map((i) => i.trim())
+          .map((i) => i.split(' ')[0]) ?? img.src
+      );
+    });
   });
 }
 
