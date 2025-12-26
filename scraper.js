@@ -1,3 +1,5 @@
+const { performance } = require('perf_hooks'); // Built-in Node tool
+const { autoRetry } = require('@grammyjs/auto-retry');
 const { chromium } = require('playwright-extra');
 const stealth = require('puppeteer-extra-plugin-stealth')();
 const { Bot, InputMediaBuilder } = require('grammy');
@@ -14,6 +16,9 @@ async function run() {
     maxDelaySeconds: 30,    // Don't wait longer than 30s
   }));
 
+  const startTime = performance.now(); // Start the clock
+  let totalSent = 0;
+
   // 1. Launch with slightly more "human" settings
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
@@ -25,10 +30,28 @@ async function run() {
   // Chunk and send (same logic as before)
   for (let i = 0; i < images.length; i += 10) {
     const chunk = images.slice(i, i + 10).map(u => InputMediaBuilder.photo(u));
-    await bot.api.sendMediaGroup(chatId, chunk, {
-      disable_notification: i > 0, // Only notify for the first batch
-    });
+    try {
+      await bot.api.sendMediaGroup(chatId, chunk, {
+        disable_notification: i > 0, // Only notify for the first batch
+      });
+      totalSent += chunk.length;
+    } catch (error) {
+      console.error("Batch failed", e);
+    }
   }
+
+  // --- Generate Summary ---
+  const endTime = performance.now();
+  const durationSeconds = ((endTime - startTime) / 1000).toFixed(1);
+  const summary = `
+📊 **Scrape Summary**
+━━━━━━━━━━━━━━
+✅ **Images Sent:** ${totalSent} / ${images.length}
+⏱ **Total Time:** ${durationSeconds}s
+🌐 **Domain:** ${new URL(process.env.TARGET_URL).hostname}
+    `;
+
+  await bot.api.sendMessage(process.env.CHAT_ID, summary, { parse_mode: "Markdown" });
 
   await browser.close();
 }
