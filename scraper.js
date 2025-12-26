@@ -58,11 +58,6 @@ async function run() {
   for (let i = 0; i < images.length; i += 10) {
     const chunk = images.slice(i, i + 10).map(u => InputMediaBuilder.photo(u));
     try {
-      if (progressMsg) bot.api.deleteMessage(chatId, progressMsg.message_id).catch(() => { });
-      progressMsg = await bot.api.sendMessage(chatId,
-        `📥 Progress: ${progress}%\n${progressBar}\nSending batch ${Math.floor(i / 10) + 1}...`
-      ).catch(() => { }); // Catch errors if user deleted the message
-
       await bot.api.sendMediaGroup(chatId, chunk, {
         disable_notification: i > 0, // Only notify for the first batch
       });
@@ -71,9 +66,13 @@ async function run() {
       const progress = Math.min(((i + 10) / images.length) * 100, 100).toFixed(0);
       const progressBar = "▓".repeat(Math.floor(progress / 10)) + "░".repeat(10 - Math.floor(progress / 10));
 
-
+      if (progressMsg) bot.api.deleteMessage(chatId, progressMsg.message_id).catch(() => { });
+      progressMsg = await bot.api.sendMessage(chatId,
+        `📥 Progress: ${progress}%\n${progressBar}\nSending batch ${Math.floor(i / 10) + 1}...`
+      ).catch(() => { }); // Catch errors if user deleted the message
     } catch (error) {
-      console.error("Batch failed", e);
+      console.error("Batch failed", error);
+      await bot.api.sendMessage(chatId, `⚠️ Failed to send batch starting at image ${i + 1}. Continuing...`);
     }
   }
 
