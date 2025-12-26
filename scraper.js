@@ -38,12 +38,12 @@ async function run() {
   switch (new URL(url).hostname) {
     case 'instagram.com':
     case 'www.instagram.com':
-      images.push(...await handleInstagram(page, url));
+      images = await handleInstagram(page, url)
       break;
     // Add more cases for different sites as needed
     case 'www.mens1069.com':
     case 'mens1069.com':
-      images.push(...await handleInstagram(page, url));
+      images = await handleMens1069(page, url)
       break;
     default:
       console.log("No handler for this domain, skipping specialized extraction.", url);

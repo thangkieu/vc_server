@@ -96,7 +96,7 @@ async function sendToGithubActions(ctx) {
     const url = ctx.match;
     if (!url) return ctx.reply("Usage: /scrape <url>");
 
-    await ctx.reply("🚀 Dispatching GitHub Scraper... This bypasses Cloudflare. Wait ~1 minute.");
+    await ctx.reply("🚀 Preparing images...");
 
     try {
         await axios.post(
