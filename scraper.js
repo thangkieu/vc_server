@@ -33,7 +33,6 @@ async function run() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
-  const progressMsg = await bot.api.sendMessage(chatId, `📥 Found ${images.length} images. Starting download...`);
 
   // Extract images using browser context (bypasses many blocks)
   let images = []
@@ -53,6 +52,7 @@ async function run() {
       return
   }
   console.log(`Found ${images.length} images. Sending to Telegram...`);
+  const progressMsg = await bot.api.sendMessage(chatId, `📥 Found ${images.length} images. Starting download...`);
 
   // Chunk and send (same logic as before)
   for (let i = 0; i < images.length; i += 10) {
