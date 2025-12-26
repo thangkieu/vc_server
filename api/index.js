@@ -2,6 +2,7 @@ const { Bot, webhookCallback, InputMediaBuilder } = require("grammy");
 const axios = require('axios');
 const cheerio = require('cheerio');
 const bot = new Bot(process.env.BOT_TOKEN);
+const https = require('https');
 
 bot.use(async (ctx, next) => {
     const timeout = setTimeout(() => {
@@ -55,14 +56,30 @@ async function handleScrapeRequest(ctx) {
 
 // Move the heavy logic to a separate async function
 async function scrapeAndSend(chatId, targetUrl) {
+    const agent = new https.Agent({
+        keepAlive: true,
+        // This helps bypass some basic SSL fingerprinting
+        ciphers: 'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256',
+    });
+
     const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Referer': targetUrl
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Cache-Control': 'max-age=0',
     };
 
     try {
-        const { data } = await axios.get(targetUrl, { headers });
+        const { data } = await axios.get(targetUrl, { headers, httpsAgent: agent, timeout: 8000 });
         const $ = cheerio.load(data);
         const imageElements = $('.entry-content img').get();
 
