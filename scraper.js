@@ -16,7 +16,7 @@ async function run() {
 
   console.log(`Navigating to ${url}...`);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForSelector('.entry-content', { timeout: 30000 });
+  await page.waitForSelector('.entry-content', { timeout: 60000 });
 
   // Extract images using browser context (bypasses many blocks)
   const images = await page.evaluate(() => {
