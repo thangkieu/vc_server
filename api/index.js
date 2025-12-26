@@ -50,7 +50,7 @@ async function handleScrapeRequest(ctx) {
 
     // 2. Start the process but DO NOT 'await' the whole thing here
     // This allows the webhook function to finish and return 200 OK to Telegram
-    scrapeAndSend(ctx.chat.id, targetUrl).catch(console.error);
+    await scrapeAndSend(ctx.chat.id, targetUrl).catch(console.error);
 }
 
 // Move the heavy logic to a separate async function
