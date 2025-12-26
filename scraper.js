@@ -33,6 +33,8 @@ async function run() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
+  const progressMsg = await bot.api.sendMessage(chatId, `📥 Found ${images.length} images. Starting download...`);
+
   // Extract images using browser context (bypasses many blocks)
   let images = []
   switch (new URL(url).hostname) {
@@ -60,6 +62,13 @@ async function run() {
         disable_notification: i > 0, // Only notify for the first batch
       });
       totalSent += chunk.length;
+
+      const progress = Math.min(((i + 10) / images.length) * 100, 100).toFixed(0);
+      const progressBar = "▓".repeat(Math.floor(progress / 10)) + "░".repeat(10 - Math.floor(progress / 10));
+
+      await bot.api.editMessageText(chatId, progressMsg.message_id,
+        `📥 Progress: ${progress}%\n${progressBar}\nSending batch ${Math.floor(i / 10) + 1}...`
+      ).catch(() => { }); // Catch errors if user deleted the message
     } catch (error) {
       console.error("Batch failed", e);
     }
@@ -69,7 +78,7 @@ async function run() {
   const endTime = performance.now();
   const durationSeconds = ((endTime - startTime) / 1000).toFixed(1);
   const summary = `
-📊 **Scrape Summary**
+📊 **Download Summary**
 ━━━━━━━━━━━━━━
 ✅ **Images Sent:** ${totalSent} / ${images.length}
 ⏱ **Total Time:** ${durationSeconds}s
