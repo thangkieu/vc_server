@@ -6,11 +6,17 @@ async function run() {
   const chatId = process.env.CHAT_ID;
   const bot = new Bot(process.env.BOT_TOKEN);
 
-  const browser = await chromium.launch();
+  // 1. Launch with slightly more "human" settings
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    viewport: { width: 1280, height: 800 }
+  });
   const page = await browser.newPage();
 
   console.log(`Navigating to ${url}...`);
-  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForSelector('.entry-content', { timeout: 30000 });
 
   // Extract images using browser context (bypasses many blocks)
   const images = await page.evaluate(() => {
