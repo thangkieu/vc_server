@@ -5,7 +5,7 @@ const WELCOM_MESSAGE = `
 👉 /start - Show this welcome message.
 👉 /img <url> - Scrape images from the provided URL and send them here.`;
 
-const IMG_COMMAND_USAGE = `**Command Usaged:**
+const IMG_COMMAND_USAGE = `**Command Usage:**
 👉 /img https://www.instagram.com/p/DSryRsKEXYd
 👉 /img https://www.mens1069.com/archives/406495`;
 
