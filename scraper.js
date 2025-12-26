@@ -1,6 +1,7 @@
-const { chromium } = require('playwright'); // Playwright is better for this
+const { chromium } = require('playwright-extra');
+const stealth = require('puppeteer-extra-plugin-stealth')();
 const { Bot, InputMediaBuilder } = require('grammy');
-
+chromium.use(stealth);
 async function run() {
   const url = process.env.TARGET_URL;
   const chatId = process.env.CHAT_ID;
