@@ -1,5 +1,6 @@
 const { Bot, webhookCallback } = require('grammy');
 const axios = require('axios');
+const { WELCOM_MESSAGE, IMG_COMMAND_USAGE } = require('./constant');
 const bot = new Bot(process.env.BOT_TOKEN);
 
 bot.command('start', handleStartCommand);
@@ -19,9 +20,10 @@ module.exports = async (req, res) => {
  */
 async function handleImgCommand(ctx) {
   const url = ctx.match;
-  if (!url) return ctx.reply('Usage: /img <url>');
+  if (!url) return ctx.reply(IMG_COMMAND_USAGE, { parse_mode: 'Markdown' });
 
   await ctx.reply('🚀 Preparing images...');
+  await ctx.replyWithChatAction('upload_photo');
 
   try {
     await axios.post(
@@ -50,15 +52,5 @@ async function handleImgCommand(ctx) {
  * @param {import('grammy').Context} ctx
  */
 async function handleStartCommand(ctx) {
-  await ctx.reply(
-    `
-  🌅 Welcome to Empty ASDF Bot!
-
-  Send me a URL with /img <url> to start downloading images.
-  **Supported sites**:
-  - https://www.instagram.com/p/DSryRsKEXYd
-  - https://www.mens1069.com/archives/406495
-`,
-    { parse_mode: 'Markdown' }
-  );
+  await ctx.reply(WELCOM_MESSAGE, { parse_mode: 'Markdown' });
 }
