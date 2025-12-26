@@ -17,7 +17,7 @@ bot.use(async (ctx, next) => {
     }
 });
 
-bot.command("scrape", handleScrapeRequest);
+bot.command("scrape", sendToGithubActions);
 
 // Create the grammY handler
 const handleUpdate = webhookCallback(bot, "http",);
@@ -56,30 +56,8 @@ async function handleScrapeRequest(ctx) {
 
 // Move the heavy logic to a separate async function
 async function scrapeAndSend(chatId, targetUrl) {
-    const agent = new https.Agent({
-        keepAlive: true,
-        // This helps bypass some basic SSL fingerprinting
-        ciphers: 'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256',
-    });
-
-    const headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"macOS"',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Cache-Control': 'max-age=0',
-    };
-
     try {
-        const { data } = await axios.get(targetUrl, { headers, httpsAgent: agent, timeout: 8000 });
+        const { data } = await axios.get(targetUrl);
         const $ = cheerio.load(data);
         const imageElements = $('.entry-content img').get();
 
@@ -112,5 +90,33 @@ async function scrapeAndSend(chatId, targetUrl) {
     } catch (err) {
         console.error(err);
         await bot.api.sendMessage(chatId, "Failed to complete scraping. " + err.message);
+    }
+}
+
+async function sendToGithubActions(ctx) {
+    const url = ctx.match;
+    if (!url) return ctx.reply("Usage: /scrape <url>");
+
+    await ctx.reply("🚀 Dispatching GitHub Scraper... This bypasses Cloudflare. Wait ~1 minute.");
+
+    try {
+        await axios.post(
+            `https://api.github.com/repos/thangkieu/vc_server/dispatches`,
+            {
+                event_type: "scrape-command",
+                client_payload: {
+                    url: url,
+                    chatId: ctx.chat.id.toString()
+                }
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.GITHUB_PAT}`,
+                    Accept: "application/vnd.github.v3+json",
+                }
+            }
+        );
+    } catch (err) {
+        await ctx.reply("Failed to trigger GitHub Action.");
     }
 }

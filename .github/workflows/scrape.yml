@@ -1,0 +1,19 @@
+name: Remote Scrape
+on:
+  repository_dispatch:
+    types: [scrape-command]
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install playwright grammy
+      - run: npx playwright install chromium
+      - run: node scraper.js
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          TARGET_URL: ${{ github.event.client_payload.url }}
+          CHAT_ID: ${{ github.event.client_payload.chatId }}
