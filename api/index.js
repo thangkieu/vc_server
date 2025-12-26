@@ -87,6 +87,7 @@ async function scrapeAndSend(chatId, targetUrl) {
 
         await bot.api.sendMessage(chatId, `🎉 Finished sending ${allUrls.length} images!`);
     } catch (err) {
-        await bot.api.sendMessage(chatId, "Failed to complete scraping.");
+        console.error(err);
+        await bot.api.sendMessage(chatId, "Failed to complete scraping. " + err.message);
     }
 }

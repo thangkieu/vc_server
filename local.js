@@ -6,18 +6,37 @@ require("dotenv").config(); // Load your BOT_TOKEN from a .env file
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
-bot.command("scrape", async (ctx) => {
+
+bot.command("scrape", handleScrapeRequest);
+
+const app = express();
+app.use(express.json());
+
+// Set up the webhook route
+app.post("/api/index", webhookCallback(bot, "express"));
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Local server running on http://localhost:${PORT}`);
+});
+
+
+/**
+ * Handle the /scrape command
+ * @param {import("grammy").CommandContext} ctx Command Context
+ * @returns Promise<void>
+ */
+async function handleScrapeRequest(ctx) {
   const targetUrl = ctx.match;
   if (!targetUrl) return ctx.reply("Usage: /scrape <url>");
 
   // 1. Respond to Telegram IMMEDIATELY
-  await ctx.reply("Request received! I'm scraping in the background to avoid timeouts...");
-
+  await ctx.reply("Request received! I'm extracting in the background to avoid timeouts...");
 
   // 2. Start the process but DO NOT 'await' the whole thing here
   // This allows the webhook function to finish and return 200 OK to Telegram
-  scrapeAndSend(ctx.chat.id, targetUrl).catch(console.error);
-});
+  await scrapeAndSend(ctx.chat.id, targetUrl).catch(console.error);
+}
 
 // Move the heavy logic to a separate async function
 async function scrapeAndSend(chatId, targetUrl) {
@@ -56,15 +75,3 @@ async function scrapeAndSend(chatId, targetUrl) {
     await bot.api.sendMessage(chatId, "Failed to complete scraping.");
   }
 }
-
-
-const app = express();
-app.use(express.json());
-
-// Set up the webhook route
-app.post("/api/index", webhookCallback(bot, "express"));
-
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Local server running on http://localhost:${PORT}`);
-});
