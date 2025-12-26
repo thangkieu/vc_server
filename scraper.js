@@ -130,6 +130,8 @@ async function handleInstagram(page, url) {
       'x1yvgwvq xjd31um x1ixjvfu xwt6s21 x13fuv20 x18b5jzi x1q0q8m5 x1t7ytsu x178xt8z x1lun4ml xso031l xpilrb4 x78zum5 x1q0g3np xh8yej3';
     const cls = INSTAGRAM_SELCTOR.split(' ').join('.');
 
-    return Array.from(document.querySelectorAll(`.${cls} img`)).map((img) => img.src);
+    return Array.from(document.querySelectorAll(`.${cls} div[role="button"] img`)).map(
+      (img) => img.src
+    );
   });
 }
