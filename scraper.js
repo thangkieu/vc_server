@@ -110,7 +110,7 @@ async function handleInstagram(page, url) {
   await page.goto(url);
   // Logic to find the 'og:image' or the __additionalData script tag
   const imageUrl = await page.evaluate(() => {
-    return document.querySelector('meta[property="og:image"]')?.content;
+    return document.querySelector('div[role="button"] img')?.src;
   });
   return imageUrl ? [imageUrl] : [];
 }
