@@ -133,12 +133,12 @@ async function handleInstagram(page, url) {
   const INSTAGRAM_SELCTOR = process.env.INSTAGRAM_SELCTOR;
 
   await page.goto(url, { waitUntil: 'domcontentloaded' });
-  return await page.evaluate((selector) => {
-    if (!selector) {
-      console.error('Instagram selector not defined in env variables.');
-      return [];
-    }
+  return await page.evaluate(() => {
+    // if (!selector) {
+    //   console.error('Instagram selector not defined in env variables.');
+    //   return [];
+    // }
 
-    return Array.from(document.querySelectorAll(`${selector} img`)).map((img) => img.src);
-  }, INSTAGRAM_SELCTOR);
+    return Array.from(document.querySelectorAll(`._acay img`)).map((img) => img.src);
+  });
 }
