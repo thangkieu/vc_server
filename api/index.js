@@ -20,7 +20,11 @@ module.exports = async (req, res) => {
  */
 async function handleImgCommand(ctx) {
   const url = ctx.match;
-  if (!url) return ctx.reply(IMG_COMMAND_USAGE, { parse_mode: 'Markdown' });
+  if (!url)
+    return ctx.reply(IMG_COMMAND_USAGE, {
+      parse_mode: 'Markdown',
+      link_preview_options: { is_disabled: true },
+    });
 
   await ctx.reply('🚀 Preparing images...');
   await ctx.replyWithChatAction('upload_photo');

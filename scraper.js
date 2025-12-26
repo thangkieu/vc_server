@@ -106,7 +106,10 @@ async function run() {
 🌐 **URL:** ${url}
     `;
 
-  await bot.api.sendMessage(chatId, summary, { parse_mode: 'Markdown' });
+  await bot.api.sendMessage(chatId, summary, {
+    parse_mode: 'Markdown',
+    link_preview_options: { is_disabled: true },
+  });
 
   await browser.close();
 }
