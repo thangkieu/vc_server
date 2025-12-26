@@ -139,6 +139,6 @@ async function handleInstagram(page, url) {
       return [];
     }
 
-    return Array.from(document.querySelectorAll(`${selector} img`)).map((img) => img.src);
+    return Array.from(document.querySelectorAll(`._acay img`)).map((img) => img.src);
   }, INSTAGRAM_SELCTOR);
 }
