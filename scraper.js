@@ -6,6 +6,16 @@ const { Bot, InputMediaBuilder } = require('grammy');
 
 chromium.use(stealth);
 
+const UNSUPPORTED_DOMAIN_MESSAGE = `
+❌ **Error: Unsupported Domain**
+━━━━━━━━━━━━━━
+❌ **URL:** {url}
+⏱ **Supported domains:**
+1. instagram.com
+2. mens1069.com
+Please check the URL and try again.
+`;
+
 async function run() {
   const url = process.env.TARGET_URL;
   const chatId = process.env.CHAT_ID;
@@ -24,7 +34,22 @@ async function run() {
   const page = await browser.newPage();
 
   // Extract images using browser context (bypasses many blocks)
-  const images = await handleMens1069(page, url)
+  let images = []
+  switch (new URL(url).hostname) {
+    case 'instagram.com':
+    case 'www.instagram.com':
+      images.push(...await handleInstagram(page, url));
+      break;
+    // Add more cases for different sites as needed
+    case 'www.mens1069.com':
+    case 'mens1069.com':
+      images.push(...await handleInstagram(page, url));
+      break;
+    default:
+      console.log("No handler for this domain, skipping specialized extraction.", url);
+      await bot.api.sendMessage(chatId, UNSUPPORTED_DOMAIN_MESSAGE.replace('{url}', url), { parse_mode: "Markdown" });
+      return
+  }
   console.log(`Found ${images.length} images. Sending to Telegram...`);
 
   // Chunk and send (same logic as before)
@@ -48,10 +73,10 @@ async function run() {
 ━━━━━━━━━━━━━━
 ✅ **Images Sent:** ${totalSent} / ${images.length}
 ⏱ **Total Time:** ${durationSeconds}s
-🌐 **Domain:** ${new URL(process.env.TARGET_URL).hostname}
+🌐 **Domain:** ${new URL(url).hostname}
     `;
 
-  await bot.api.sendMessage(process.env.CHAT_ID, summary, { parse_mode: "Markdown" });
+  await bot.api.sendMessage(chatId, summary, { parse_mode: "Markdown" });
 
   await browser.close();
 }

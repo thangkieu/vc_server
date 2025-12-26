@@ -17,11 +17,10 @@ bot.use(async (ctx, next) => {
     }
 });
 
-bot.command("scrape", sendToGithubActions);
+bot.command("download_image", sendToGithubActions);
 
 // Create the grammY handler
-const handleUpdate = webhookCallback(bot, "http",);
-
+const handleUpdate = webhookCallback(bot, "http");
 module.exports = async (req, res) => {
     // Only allow POST requests (which is what Telegram sends)
     if (req.method === "POST") {
