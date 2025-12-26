@@ -126,8 +126,7 @@ async function handleMens1069(page, url) {
 async function handleInstagram(page, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   return await page.evaluate(() => {
-    const INSTAGRAM_SELCTOR =
-      'x1yvgwvq xjd31um x1ixjvfu xwt6s21 x13fuv20 x18b5jzi x1q0q8m5 x1t7ytsu x178xt8z x1lun4ml xso031l xpilrb4 x78zum5 x1q0g3np xh8yej3';
+    const INSTAGRAM_SELCTOR = '_acay';
     const cls = INSTAGRAM_SELCTOR.split(' ').join('.');
 
     return Array.from(document.querySelectorAll(`.${cls} div[role="button"] img`)).map(
