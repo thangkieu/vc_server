@@ -129,8 +129,6 @@ async function handleInstagram(page, url) {
     const INSTAGRAM_SELCTOR = '_acay';
     const cls = INSTAGRAM_SELCTOR.split(' ').join('.');
 
-    return Array.from(document.querySelectorAll(`.${cls} div[role="button"] img`)).map(
-      (img) => img.src
-    );
+    return Array.from(document.querySelectorAll(`.${cls} img`)).map((img) => img.src);
   });
 }
