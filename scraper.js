@@ -126,9 +126,13 @@ async function handleMens1069(page, url) {
 async function handleInstagram(page, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   return await page.evaluate(() => {
-    const INSTAGRAM_SELCTOR = '_acay';
-    const cls = INSTAGRAM_SELCTOR.split(' ').join('.');
+    const INSTAGRAM_SELCTOR = process.env.INSTAGRAM_SELCTOR;
 
-    return Array.from(document.querySelectorAll(`.${cls} img`)).map((img) => img.src);
+    if (!INSTAGRAM_SELCTOR) {
+      console.error('Instagram selector not defined in env variables.');
+      return [];
+    }
+
+    return Array.from(document.querySelectorAll(`${INSTAGRAM_SELCTOR} img`)).map((img) => img.src);
   });
 }
