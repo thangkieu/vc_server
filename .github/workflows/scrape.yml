@@ -46,7 +46,7 @@ jobs:
         if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
 
-      - name: Run Scraper
+      - name: Run Extracting Script
         run: node scraper.js
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
