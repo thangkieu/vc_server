@@ -8,6 +8,11 @@ async function run() {
   const url = process.env.TARGET_URL;
   const chatId = process.env.CHAT_ID;
   const bot = new Bot(process.env.BOT_TOKEN);
+  // 1. Add the auto-retry plugin
+  bot.api.config.use(autoRetry({
+    maxRetryAttempts: 5,     // Try 5 times before giving up
+    maxDelaySeconds: 30,    // Don't wait longer than 30s
+  }));
 
   // 1. Launch with slightly more "human" settings
   const browser = await chromium.launch({ headless: true });
@@ -15,13 +20,14 @@ async function run() {
 
   // Extract images using browser context (bypasses many blocks)
   const images = await handleMens1069(page, url)
-
   console.log(`Found ${images.length} images. Sending to Telegram...`);
 
   // Chunk and send (same logic as before)
   for (let i = 0; i < images.length; i += 10) {
     const chunk = images.slice(i, i + 10).map(u => InputMediaBuilder.photo(u));
-    await bot.api.sendMediaGroup(chatId, chunk);
+    await bot.api.sendMediaGroup(chatId, chunk, {
+      disable_notification: i > 0, // Only notify for the first batch
+    });
   }
 
   await browser.close();
