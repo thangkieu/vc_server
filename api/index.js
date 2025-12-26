@@ -51,7 +51,6 @@ async function handleImgCommand(ctx) {
  */
 async function handleStartCommand(ctx) {
   await ctx.reply(
-    ctx.chat.id,
     `
   🌅 Welcome to Empty ASDF Bot!
 
