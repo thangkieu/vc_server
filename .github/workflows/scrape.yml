@@ -8,18 +8,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: npm install playwright grammy playwright-extra puppeteer-extra-plugin-stealth
-      - run: npx playwright install chromium
-      - run: node scraper.js
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # This built-in option caches global npm cache, but not node_modules
+          cache: "npm"
+
+      # 1. Cache node_modules
+      - name: Cache Node Modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 2. Cache Playwright Browsers
+      - name: Cache Playwright Binaries
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      # 3. Install dependencies only if cache missed
+      - name: Install Dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm install
+
+      # 4. Install Playwright browsers only if cache missed
+      - name: Install Playwright Browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Scraper
+        run: node scraper.js
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           TARGET_URL: ${{ github.event.client_payload.url }}
           CHAT_ID: ${{ github.event.client_payload.chatId }}
-      - name: Upload Screenshot on Failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshot
-          path: error.png
